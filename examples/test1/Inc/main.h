@@ -59,7 +59,7 @@ void Error_Handler(void);
 
 /* Private defines -----------------------------------------------------------*/
 /* USER CODE BEGIN Private defines */
-
+extern void HAL_Sysclk_Init(void);
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

@@ -16,6 +16,7 @@ C_DEPS :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
+Drivers/STM32L4xx_HAL_Driver/Src/Legacy \
 Drivers/STM32L4xx_HAL_Driver/Src \
 Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 \
 Middlewares/Third_Party/FreeRTOS/Source \
@@ -26,7 +27,6 @@ Startup \
 components/cyt_list \
 components/log \
 components/priv_os \
-components/register/init_d \
-components/register/miscdevice \
-components/register/plat_register \
+components/register \
+platform_stm32lx/serial \
 

@@ -1,6 +1,9 @@
 eclipse.preferences.version=1
+formatSourceCode=true
+formatSourceCodeEditedLines=false
 formatter_profile=org.eclipse.cdt.ui.default.allman_profile
 formatter_settings_version=1
+removeTrailingWhitespaceEditedLines=false
 spelling_locale_initialized=true
 useAnnotationsPrefPage=true
 useQuickDiffPrefPage=true

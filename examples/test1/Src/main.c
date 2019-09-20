@@ -1,198 +1,216 @@
-/* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2019 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
-
 /* Includes ------------------------------------------------------------------*/
+#include <stdio.h>
+#include "stm32l4xx_hal.h"
 #include "main.h"
 #include "cmsis_os.h"
-#include "gpio.h"
+#include "task.h"
+#include "init_d.h"
+#include "log.h"
+#include "miscdevice.h"
+#include "time.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
+//#include "cmb_def.h"
+//#include "version.h"
+//#include "cm_backtrace.h"
+//#include "watchdog.h"
 
-/* USER CODE END Includes */
+extern UART_HandleTypeDef huart1;
+extern void serial1_hal_init(void);
+#define HAL_Debug_init serial1_hal_init
 
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
+osThreadId startup_handle;
 
-/* USER CODE END PTD */
+uint8_t chipUid[12];
 
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
+void HAL_GetUID(void)
+{
+	uint8_t i;
+	uint8_t *pUID = (uint8_t *) (UID_BASE);
 
-/* USER CODE END PD */
+	for (i = 0; i != 12; i++)
+	{
+		chipUid[i] = *pUID++;
+	}
+}
+/**
+ * @brief  show system id ,and clock
+ * @retval int
+ */
 
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
+void prtsrce_sysinf(void)
+{
+	uint8_t i = 0;
 
-/* USER CODE END PM */
+	printf("*****************************************************\n");
+	printf(" *\tTerminus lock use freertos ,version:V10.0.1\n");
+	printf(
+			" *\tBy terminus hwteam(BeiJing), project started in December 2018.\n");
+	printf(" *\tBulid data=%s %s\n", __DATE__, __TIME__);
+	//printf(" *\tCodeing version =%s\n" ,PRG_VERSION);
+	//printf(" *\tSoft version =%s\n" ,SOFT_VERSION);
+	//printf(" *\tHardware version =%s\n" ,HARD_VERSION);
+	//printf(" *\tHardfault debug tool version =%s\n" ,CMB_SW_VERSION);
+	printf(" *\tCPU:STM32L471REXX\n");
+	printf(" *\tHCLK:%ldHz\n", HAL_RCC_GetHCLKFreq());
+	printf(" *\tPCLK1:%ldHz\n", HAL_RCC_GetPCLK1Freq());
+	printf(" *\tPCLK2:%ldHz\n", HAL_RCC_GetPCLK2Freq());
+	printf(" *\tHAL version:0x%lX\n", HAL_GetHalVersion());
+	printf(" *\tDevice revision ID:0x%lX\n", HAL_GetREVID());
+	printf(" *\tDevice ID:0x%lX\n", HAL_GetDEVID());
+	printf(" *\tUnique device ID:0x");
+	for (i = 0; i < 12; i++)
+	{
+		printf("%X", chipUid[i]);
+	}
+	printf("\n");
+	printf("*****************************************************");
+	printf("\n\n");
+}
 
-/* Private variables ---------------------------------------------------------*/
+DEV_HAND nvfd;
+void startup_task(void *argument)
+{
+	/* memory , plarform , components ...init*/
+	driver_init();
 
-/* USER CODE BEGIN PV */
+	/* task init*/
+	_setup();
 
-/* USER CODE END PV */
+	HAL_Delay(2000);
 
-/* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
-void MX_FREERTOS_Init(void);
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
+	while (1)
+	{
+		//feed_dog();
+		osDelay(20000);
+	}
+}
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  creat start task, module init must into task
+ * @retval int
+ */
+void startup(void)
+{
+	//osThreadDef(stup_task, startup_task, osPriorityNormal,    0, 256);
+	//startup_handle = osThreadCreate(osThread(stup_task), NULL);
+
+	const osThreadAttr_t defaultTask_attributes =
+	{ .name = "defaultTask", .priority = (osPriority_t) osPriorityNormal,
+			.stack_size = 256 };
+	startup_handle = osThreadNew(startup_task, NULL, &defaultTask_attributes);
+
+}
+
+/**
+ * @brief  The application entry point.
+ * @retval int
+ */
+
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
+	/* Output error message for HARDFAULT*/
+	//HAL_HardfaultDebug_init();
+	/* reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
 
-  /* USER CODE END 1 */
-  
+	/* Get chip uid*/
+	HAL_GetUID();
 
-  /* MCU Configuration--------------------------------------------------------*/
+	/* Configure the system clock */
+	HAL_Sysclk_Init();
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+	/* Config pwr clock*/
+	//HAL_Pwr_Init();
+	/* Init serial for printf port*/
+	HAL_Debug_init();
 
-  /* USER CODE BEGIN Init */
+	/* Call init function for freertos objects (in freertos.c) */
+	//startup();
+	/* Printf system info ,clock device version...*/
+	prtsrce_sysinf();
 
-  /* USER CODE END Init */
+	/* Start scheduler */
+	osKernelStart();
 
-  /* Configure the system clock */
-  SystemClock_Config();
+	/* We should never get here as control is now taken by the scheduler */
 
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  /* USER CODE BEGIN 2 */
-
-  /* USER CODE END 2 */
-
-  /* Call init function for freertos objects (in freertos.c) */
-  MX_FREERTOS_Init(); 
-
-  /* Start scheduler */
-  osKernelStart();
-  
-  /* We should never get here as control is now taken by the scheduler */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
+	/* Infinite loop */
+	while (1)
+		;
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
-void SystemClock_Config(void)
+ * @brief  idle hook
+ * @retval None
+ */
+void vApplicationIdleHook(void)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /** Configure LSE Drive Capability 
-  */
-  HAL_PWR_EnableBkUpAccess();
-  __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_LOW);
-  /** Initializes the CPU, AHB and APB busses clocks 
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSE|RCC_OSCILLATORTYPE_MSI;
-  RCC_OscInitStruct.LSEState = RCC_LSE_ON;
-  RCC_OscInitStruct.MSIState = RCC_MSI_ON;
-  RCC_OscInitStruct.MSICalibrationValue = 0;
-  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Initializes the CPU, AHB and APB busses clocks 
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_MSI;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Configure the main internal regulator output voltage 
-  */
-  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Enable MSI Auto calibration 
-  */
-  HAL_RCCEx_EnableMSIPLLMode();
+}
+/**
+ * @brief  Overflow stack
+ * @retval None
+ */
+void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName)
+{
+	//log(ERR, "Into vApplicationStackOverflowHook , task name = %s .\n", pcTaskName);
 }
 
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
+/**
+ * @brief  malloc fail
+ * @retval None
+ */
+void vApplicationMallocFailedHook(void)
+{
+	//log(ERR, "Into vApplicationMallocFailedHook\n");
+}
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-
-  /* USER CODE END Error_Handler_Debug */
+	/* User can add his own implementation to report the HAL error return state */
+	//log(ERR, "Into Error_Handler , file=%s ,line=%d.\n", file ,line);
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
+extern void after_sleep(void);
 void assert_failed(char *file, uint32_t line)
-{ 
-  /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
+{
+	//after_sleep();
+	//printf("Wrong parameters value: file %s on line %d\r\n", file, line);
 }
 #endif /* USE_FULL_ASSERT */
+
+#ifdef __GNUC__
+/* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
+ set to 'Yes') calls __io_putchar() */
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#else
+#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif /* __GNUC__ */
+PUTCHAR_PROTOTYPE
+{
+	if (ch == '\n')
+	{
+		uint8_t enter = '\r';
+		HAL_UART_Transmit(&huart1, &enter, 1, 5000);
+	}
+
+	if ((HAL_UART_Transmit(&huart1, (uint8_t *) &ch, 1, 5000)) != HAL_OK)
+	{
+		return -1;
+	}
+	return ch;
+}
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

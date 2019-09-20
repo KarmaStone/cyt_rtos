@@ -52,9 +52,7 @@
 									<listOptionValue builtIn="false" value="&quot;${WorkspaceDirPath}/../components/log&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${WorkspaceDirPath}/../components/cyt_list&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${WorkspaceDirPath}/../components/priv_os&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${WorkspaceDirPath}/../components/register/init_d&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${WorkspaceDirPath}/../components/register/miscdevice&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${WorkspaceDirPath}/../components/register/plat_register&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${WorkspaceDirPath}/../components/register&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.897339796" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>

@@ -8,9 +8,8 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
--include components/register/plat_register/subdir.mk
--include components/register/miscdevice/subdir.mk
--include components/register/init_d/subdir.mk
+-include platform_stm32lx/serial/subdir.mk
+-include components/register/subdir.mk
 -include components/priv_os/subdir.mk
 -include components/log/subdir.mk
 -include components/cyt_list/subdir.mk
@@ -20,6 +19,7 @@ RM := rm -rf
 -include Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/subdir.mk
 -include Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/subdir.mk
 -include Middlewares/Third_Party/FreeRTOS/Source/subdir.mk
+-include Drivers/STM32L4xx_HAL_Driver/Src/Legacy/subdir.mk
 -include Drivers/STM32L4xx_HAL_Driver/Src/subdir.mk
 -include subdir.mk
 -include objects.mk
