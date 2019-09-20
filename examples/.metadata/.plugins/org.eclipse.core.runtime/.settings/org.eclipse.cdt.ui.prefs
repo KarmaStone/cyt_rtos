@@ -4,6 +4,7 @@ formatSourceCodeEditedLines=false
 formatter_profile=org.eclipse.cdt.ui.default.allman_profile
 formatter_settings_version=1
 removeTrailingWhitespaceEditedLines=false
+scalability.numberOfLines=50000
 spelling_locale_initialized=true
 useAnnotationsPrefPage=true
 useQuickDiffPrefPage=true

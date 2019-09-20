@@ -9,13 +9,15 @@
 #include "miscdevice.h"
 #include "time.h"
 
+#define	TAG	"main"
 //#include "cmb_def.h"
 //#include "version.h"
 //#include "cm_backtrace.h"
 //#include "watchdog.h"
 
 extern UART_HandleTypeDef huart1;
-extern void serial1_hal_init(void);
+extern void
+serial1_hal_init(void);
 #define HAL_Debug_init serial1_hal_init
 
 osThreadId startup_handle;
@@ -71,16 +73,13 @@ DEV_HAND nvfd;
 void startup_task(void *argument)
 {
 	/* memory , plarform , components ...init*/
-	driver_init();
-
+	//driver_init();
 	/* task init*/
-	_setup();
-
-	HAL_Delay(2000);
-
+	//_setup();
 	while (1)
 	{
 		//feed_dog();
+		CYT_LOGE(TAG, "start up task\n");
 		osDelay(20000);
 	}
 }
@@ -96,7 +95,7 @@ void startup(void)
 
 	const osThreadAttr_t defaultTask_attributes =
 	{ .name = "defaultTask", .priority = (osPriority_t) osPriorityNormal,
-			.stack_size = 256 };
+			.stack_size = 128 };
 	startup_handle = osThreadNew(startup_task, NULL, &defaultTask_attributes);
 
 }
@@ -111,6 +110,9 @@ int main(void)
 	/* Output error message for HARDFAULT*/
 	//HAL_HardfaultDebug_init();
 	/* reset of all peripherals, Initializes the Flash interface and the Systick. */
+
+	CYT_LOG_ADD(TAG, CYT_LOG_DEBUG);
+
 	HAL_Init();
 
 	/* Get chip uid*/
@@ -124,8 +126,15 @@ int main(void)
 	/* Init serial for printf port*/
 	HAL_Debug_init();
 
+	osKernelInitialize();
 	/* Call init function for freertos objects (in freertos.c) */
-	//startup();
+	startup();
+
+	CYT_LOGE(TAG, "start up task\n");
+	CYT_LOGW(TAG, "start up task\n");
+	CYT_LOGI(TAG, "start up task\n");
+	CYT_LOGD(TAG, "start up task\n");
+
 	/* Printf system info ,clock device version...*/
 	prtsrce_sysinf();
 
@@ -183,7 +192,8 @@ void Error_Handler(void)
  * @param  line: assert_param error line source number
  * @retval None
  */
-extern void after_sleep(void);
+extern void
+after_sleep(void);
 void assert_failed(char *file, uint32_t line)
 {
 	//after_sleep();

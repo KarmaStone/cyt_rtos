@@ -1,0 +1,17 @@
+18:31:11 **** Incremental Build of configuration Debug for project log ****
+make -j8 all 
+arm-none-eabi-gcc "../Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 '-DUSE_HAL_UART_REGISTER_CALLBACKS=1' -DUSE_HAL_DRIVER -DSTM32L471xx -DDEBUG -c -I../Middlewares/Third_Party/FreeRTOS/Source/include -I"F:/stm32_cube_ide_source/cyt_rtos/components/register" -I"F:/stm32_cube_ide_source/cyt_rtos/components/priv_os" -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F -I../Inc -I"F:/stm32_cube_ide_source/cyt_rtos/components/log" -I../Drivers/CMSIS/Include -I"F:/stm32_cube_ide_source/cyt_rtos/components/cyt_list" -I../Drivers/CMSIS/Device/ST/STM32L4xx/Include -I../Drivers/STM32L4xx_HAL_Driver/Inc -I../Drivers/STM32L4xx_HAL_Driver/Inc/Legacy -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Src/main.d" -MT"Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Src/main.o"
+arm-none-eabi-gcc -o "log.elf" @"objects.list"   -mcpu=cortex-m4 -T"F:\stm32_cube_ide_source\cyt_rtos\examples\log\STM32L471RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="log.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: log.elf
+ 
+arm-none-eabi-objdump -h -S  log.elf  > "log.list"
+arm-none-eabi-size   log.elf 
+   text	   data	    bss	    dec	    hex	filename
+  30600	    124	   9220	  39944	   9c08	log.elf
+Finished building: default.size.stdout
+ 
+Finished building: log.list
+ 
+
+18:31:15 Build Finished. 0 errors, 0 warnings. (took 3s.931ms)
+

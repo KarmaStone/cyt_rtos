@@ -1,0 +1,17 @@
+#ifndef _LOG_H_
+#define _LOG_H_
+
+typedef enum
+{
+	CYT_LOG_NONE = 0, /*!< No log output */
+	CYT_LOG_ERROR, /*!< Critical errors, software module can not recover on its own */
+	CYT_LOG_WARN, /*!< Error conditions from which recovery measures have been taken */
+	CYT_LOG_INFO, /*!< Information messages which describe normal flow of events */
+	CYT_LOG_DEBUG, /*!< Extra information which is not necessary for normal use (values, pointers, sizes, etc). */
+
+	CYT_LOG_MAX
+} cyt_log_level_t;
+
+void apt(void);
+
+#endif

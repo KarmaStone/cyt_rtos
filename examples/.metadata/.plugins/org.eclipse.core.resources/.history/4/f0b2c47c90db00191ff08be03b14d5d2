@@ -1,0 +1,300 @@
+#include "log.h"
+#include "init_d.h"
+#include "miscdevice.h"
+#include "priv_os.h"
+#include "serial1.h"
+#include "main.h"
+
+UART_HandleTypeDef huart1;
+DMA_HandleTypeDef hdma_usart1_rx;
+
+#define SD_PORT huart1
+
+#define HAL_RCC_DMA_CLOCK_ENABLE() __HAL_RCC_DMA1_CLK_ENABLE()
+#define HAL_TX_PIN GPIO_PIN_9
+#define HAL_TX_PORT GPIOA
+
+#define HAL_RX_PIN GPIO_PIN_10
+#define HAL_RX_PORT GPIOA
+
+#define MODULE_NAME "serial1"
+
+static sc_semaphore_t serdbg_semap = NULL;
+static uint8_t serdbg_msg[DEBUG_RX_MAX];
+static uint32_t ser_read_mode = WAIT_FOR_EVER;
+static uint32_t temp;
+
+void USART1_IRQHandler(void)
+{
+
+	if (((__HAL_UART_GET_FLAG(&SD_PORT, UART_FLAG_IDLE)) != RESET))
+	{
+		__HAL_UART_CLEAR_IDLEFLAG(&SD_PORT);
+		temp = SD_PORT.Instance->ISR;
+		temp = SD_PORT.Instance->RDR;
+
+		if (serdbg_semap != NULL)
+		{
+			send_semaphore(serdbg_semap);
+		}
+	}
+
+	HAL_UART_IRQHandler(&SD_PORT);
+}
+
+void serial_1_rst(void)
+{
+	HAL_UART_Receive_DMA(&SD_PORT, serdbg_msg, DEBUG_RX_MAX);
+
+	__HAL_UART_CLEAR_IDLEFLAG(&SD_PORT);
+	__HAL_UART_ENABLE_IT(&SD_PORT, UART_IT_IDLE);
+}
+
+void serial1_dma_init(void)
+{
+	HAL_RCC_DMA_CLOCK_ENABLE()
+	;
+}
+
+void serial1_gpio_init(void)
+{
+	GPIO_InitTypeDef GPIO_InitStruct =
+	{ 0 };
+
+	__HAL_RCC_GPIOA_CLK_ENABLE()
+	;
+
+	GPIO_InitStruct.Pin = HAL_TX_PIN;
+	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+	GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
+	HAL_GPIO_Init(HAL_TX_PORT, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin = HAL_RX_PIN;
+	HAL_GPIO_Init(HAL_RX_PORT, &GPIO_InitStruct);
+}
+
+void serial1_gpio_deinit(void)
+{
+	GPIO_InitTypeDef GPIO_InitStructure =
+	{ 0 };
+
+	GPIO_InitStructure.Pin = HAL_RX_PIN;
+	GPIO_InitStructure.Mode = GPIO_MODE_ANALOG;
+	GPIO_InitStructure.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(HAL_RX_PORT, &GPIO_InitStructure);
+
+	GPIO_InitStructure.Pin = HAL_TX_PIN;
+	HAL_GPIO_Init(HAL_TX_PORT, &GPIO_InitStructure);
+}
+
+void serial_1_mspinit(UART_HandleTypeDef *uartHandle)
+{
+	GPIO_InitTypeDef GPIO_InitStruct =
+	{ 0 };
+
+	__HAL_RCC_USART1_CLK_ENABLE()
+	;
+
+	__HAL_RCC_GPIOA_CLK_ENABLE()
+	;
+	/**USART1 GPIO Configuration
+	 PA9     ------> USART1_TX
+	 PA10     ------> USART1_RX
+	 */
+	GPIO_InitStruct.Pin = GPIO_PIN_9 | GPIO_PIN_10;
+	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+	GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	/* USART1 DMA Init */
+	/* USART1_RX Init */
+	hdma_usart1_rx.Instance = DMA1_Channel5;
+	hdma_usart1_rx.Init.Request = DMA_REQUEST_2;
+	hdma_usart1_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
+	hdma_usart1_rx.Init.PeriphInc = DMA_PINC_DISABLE;
+	hdma_usart1_rx.Init.MemInc = DMA_MINC_ENABLE;
+	hdma_usart1_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+	hdma_usart1_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+	hdma_usart1_rx.Init.Mode = DMA_NORMAL;
+	hdma_usart1_rx.Init.Priority = DMA_PRIORITY_LOW;
+	if (HAL_DMA_Init(&hdma_usart1_rx) != HAL_OK)
+	{
+		Error_Handler();
+	}
+
+	__HAL_LINKDMA(uartHandle, hdmarx, hdma_usart1_rx);
+
+	/* USART1 interrupt Init */
+	HAL_NVIC_SetPriority(USART1_IRQn, 5, 0);
+	HAL_NVIC_EnableIRQ(USART1_IRQn);
+}
+
+void serial_1_init(void)
+{
+	SD_PORT.Instance = USART1;
+	SD_PORT.Init.BaudRate = 921600;
+	SD_PORT.Init.WordLength = UART_WORDLENGTH_8B;
+	SD_PORT.Init.StopBits = UART_STOPBITS_1;
+	SD_PORT.Init.Parity = UART_PARITY_NONE;
+	SD_PORT.Init.Mode = UART_MODE_TX_RX;
+	SD_PORT.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	SD_PORT.Init.OverSampling = UART_OVERSAMPLING_16;
+	SD_PORT.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+	SD_PORT.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_RXOVERRUNDISABLE_INIT
+			| UART_ADVFEATURE_DMADISABLEONERROR_INIT;
+	SD_PORT.AdvancedInit.OverrunDisable = UART_ADVFEATURE_OVERRUN_DISABLE;
+	SD_PORT.AdvancedInit.DMADisableonRxError =
+			UART_ADVFEATURE_DMA_DISABLEONRXERROR;
+	SD_PORT.MspInitCallback = serial_1_mspinit;
+	if (HAL_UART_Init(&SD_PORT) != HAL_OK)
+	{
+		Error_Handler();
+	}
+}
+
+int serial_1_start(void)
+{
+	serdbg_semap = creat_semqphore();
+	//INIT_PRINT((serdbg_semap == NULL) ? INIT_FAIL : INIT_OK, "serial debug semqphore creat");
+
+	HAL_UART_Receive_DMA(&SD_PORT, serdbg_msg, DEBUG_RX_MAX);
+	__HAL_UART_CLEAR_IDLEFLAG(&SD_PORT);
+	__HAL_UART_ENABLE_IT(&SD_PORT, UART_IT_IDLE);
+
+	return 0;
+}
+
+void serial1_hal_init(void)
+{
+	serial1_dma_init();
+	serial_1_init();
+	serial_1_start();
+}
+
+int serial_1_open(FIL_HAND *fd)
+{
+
+	return 0;
+}
+
+int serial_1_write(FIL_HAND *fd, const void *buf, uint32_t count)
+{
+	if ((HAL_UART_Transmit(&SD_PORT, (uint8_t *) buf, count, 500)) != HAL_OK)
+	{
+		return -EIO;
+	}
+
+	return 0;
+}
+
+int serial_1_read(FIL_HAND *fd, void *data, uint32_t count)
+{
+	uint32_t rxsize = 0;
+	uint32_t rxlen = 0;
+	uint8_t temp[DEBUG_RX_MAX];
+
+	if (SD_PORT.hdmarx->Instance->CNDTR == DEBUG_RX_MAX) //缓存没有数据
+	{
+		//如果接收停止，开启接收
+		if (SD_PORT.RxState == HAL_UART_STATE_READY)
+		{
+			//log(DEBUG, "rx state is ready , start receive\n");
+			HAL_UART_Receive_DMA(&SD_PORT, serdbg_msg, DEBUG_RX_MAX);
+		}
+		//等待接收完成信号
+		read_semaphore(serdbg_semap, ser_read_mode);
+	}
+
+	rxsize = DEBUG_RX_MAX - SD_PORT.hdmarx->Instance->CNDTR;
+	if (rxsize >= count) //接受到的总长度大于read希望获取的长度
+	{
+		memcpy(data, serdbg_msg, count); //提取数据
+		rxsize -= count;
+
+		if (rxsize > 0) //还有剩余的数据
+		{
+			memcpy(temp, serdbg_msg + count, rxsize); //其余数据放入临时缓存
+			memset(serdbg_msg, 0x00, DEBUG_RX_MAX);   //清空接收缓存
+			memcpy(serdbg_msg, temp, rxsize);
+		}
+		else
+		{
+			memset(serdbg_msg, 0x00, DEBUG_RX_MAX); //清空接收缓存
+		}
+
+		rxlen = count;
+	}
+	else //接收到的数据长度小于read希望获取的长度
+	{
+		memcpy(data, serdbg_msg, rxsize);       //提取数据
+		memset(serdbg_msg, 0x00, DEBUG_RX_MAX); //清空接收缓存
+
+		rxlen = rxsize;
+		rxsize = 0;
+	}
+
+	if (SD_PORT.RxState == HAL_UART_STATE_READY)
+	{
+		HAL_UART_Receive_DMA(&SD_PORT, serdbg_msg + rxsize,
+				DEBUG_RX_MAX - rxsize);
+	}
+	else
+	{
+		__HAL_DMA_DISABLE(SD_PORT.hdmarx);
+		SD_PORT.hdmarx->Instance->CMAR = (uint32_t) (serdbg_msg + rxsize);
+		SD_PORT.hdmarx->Instance->CNDTR = DEBUG_RX_MAX - rxsize;
+		__HAL_DMA_ENABLE(SD_PORT.hdmarx);
+	}
+	return rxlen;
+}
+
+extern void SystemClock_Config(void);
+
+int serial1_resume(FIL_HAND *fd)
+{
+	HAL_Sysclk_Init();
+	serial1_gpio_init();
+
+	return 0;
+}
+
+int serial1_suspend(FIL_HAND *fd)
+{
+	serial1_gpio_deinit();
+
+	return 0;
+}
+
+int serial1_ioctl(FIL_HAND *fd, void *buf, uint32_t count, uint32_t flag)
+{
+	if (flag & IOCTL_FLAG_RESUME)
+	{
+		serial1_resume(fd);
+	}
+	if (flag & IOCTL_FLAG_SUSPEND)
+	{
+		serial1_suspend(fd);
+	}
+
+	return 0;
+}
+
+struct file_operations serial1_fops =
+{ .onwer = 0, .open = serial_1_open, .write = serial_1_write, .read =
+		serial_1_read, .ioctl = serial1_ioctl, .resume = serial1_resume,
+		.suspend = serial1_suspend, };
+
+struct miscdevice serial1 =
+{ .minor = MISC_DYNAMIC_MINOR, .name = MODULE_NAME, .fops = &serial1_fops,
+		.nodename = "device", };
+
+int serial1_init(void)
+{
+	return (misc_register(&serial1));
+}
+
+device_init(serial1_init);

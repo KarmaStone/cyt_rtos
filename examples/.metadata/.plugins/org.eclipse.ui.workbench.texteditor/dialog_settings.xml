@@ -6,8 +6,20 @@
 		<item key="wholeword" value="false"/>
 		<item key="incremental" value="false"/>
 		<item key="isRegEx" value="false"/>
-		<item key="selection" value="true"/>
+		<item key="selection" value=""/>
 		<list key="findhistory">
+			<item value="printf"/>
+			<item value="MX_FREERTOS_Init"/>
+			<item value="__io_putchar"/>
+			<item value="8000000"/>
+			<item value="KernelState"/>
+			<item value="HAL_Init"/>
+			<item value="osKernelInitialize"/>
+			<item value="TaskHandle_t"/>
+			<item value="xTaskHandle"/>
+			<item value="serial1_hal_init"/>
+			<item value="MspInitCallback"/>
+			<item value="SystemClock_Config"/>
 			<item value="TRUE"/>
 			<item value="EOS"/>
 		</list>
@@ -15,10 +27,10 @@
 		</list>
 	</section>
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
-		<item key="DIALOG_X_ORIGIN" value="1138"/>
-		<item key="DIALOG_Y_ORIGIN" value="435"/>
+		<item key="DIALOG_X_ORIGIN" value="1534"/>
+		<item key="DIALOG_Y_ORIGIN" value="287"/>
 		<item key="DIALOG_WIDTH" value="300"/>
-		<item key="DIALOG_HEIGHT" value="410"/>
+		<item key="DIALOG_HEIGHT" value="430"/>
 		<item key="DIALOG_FONT_NAME" value="1|Microsoft YaHei UI|9.0|0|WINDOWS|1|-12|0|0|0|400|0|0|0|1|0|0|0|0|Microsoft YaHei UI"/>
 	</section>
 </section>

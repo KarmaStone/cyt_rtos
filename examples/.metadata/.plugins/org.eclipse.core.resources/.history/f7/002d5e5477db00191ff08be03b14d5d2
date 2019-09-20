@@ -1,0 +1,48 @@
+#ifndef _LOG_H_
+#define _LOG_H_
+
+typedef enum
+{
+	CYT_LOG_NONE = 0, /*!< No log output */
+	CYT_LOG_ERROR, /*!< Critical errors, software module can not recover on its own */
+	CYT_LOG_WARN, /*!< Error conditions from which recovery measures have been taken */
+	CYT_LOG_INFO, /*!< Information messages which describe normal flow of events */
+	CYT_LOG_DEBUG, /*!< Extra information which is not necessary for normal use (values, pointers, sizes, etc). */
+
+	CYT_LOG_MAX
+} cyt_log_level_t;
+
+typedef struct
+{
+	char *tag;
+	uint8_t level;
+	cyt_tag_level_t *next;
+} cyt_tag_level_t;
+
+#define	LOG_COLOR_E		"\033[0;31m"
+#define	LOG_COLOR_W		"\033[0;32m"
+#define	LOG_COLOR_I		"\033[0;33m"
+#define	LOG_COLOR_D		"\033[0;37m"
+#define	LOG_COLOR_END	"\033[0;39m"
+
+#define log(level, fmt, args...)  do{\
+    if(LOG_BIT_ON(sysDebugFlag,level)){\
+		if(level == ERR){\
+		printf("\033[0;31m");}\
+        else if(level == WARN)\
+        printf("\033[0;32m");\
+        else if(level == INFO)\
+        printf("\033[0;33m");\
+        else if(level == DEBUG)\
+        printf("\033[0;37m");\
+        printf("[#]");\
+        printf("[%d%]" , osGetCPUUsage());\
+        printf_time();\
+        printf(fmt, ##args);\
+        printf("\033[0;39m");\
+    }\
+}while(0)
+
+void apt(void);
+
+#endif

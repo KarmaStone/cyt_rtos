@@ -1,0 +1,109 @@
+#include "log.h"
+
+cyt_tag_level_t *tag_level = NULL;
+
+/*
+ * Tag must be a static string
+ */
+uint8_t cyt_log_add_tag(char *tag, uint8_t level)
+{
+	cyt_tag_level_t *priv;
+	cyt_tag_level_t *this;
+
+	if (level >= CYT_LOG_MAX)
+	{
+		return false;
+	}
+
+	this = malloc(sizeof(cyt_tag_level_t));
+	if (this != NULL)
+	{
+
+		tag_level->tag = tag;
+		tag_level->level = level;
+		tag_level->next = NULL;
+		if (tag_level == NULL)
+		{
+			tag_level = this;
+		}
+		else
+		{
+			priv = tag_level;
+			while (priv->next != NULL)
+			{
+				priv = priv->next;
+			}
+			priv->next = this;
+		}
+	}
+	else
+	{
+		return false;
+	}
+
+	return (true);
+}
+
+cyt_tag_level_t *cyt_log_find_tag(char *tag)
+{
+	cyt_tag_level_t *priv = tag_level;
+
+	while (priv != NULL)
+	{
+		if ((strlen(priv->tag) == strlen(tag))
+				&& (strncmp(priv->tag, tag, strlen(tag)) == 0))
+		{
+			return priv;
+		}
+		priv = priv->next;
+	}
+
+	return NULL;
+}
+
+static int cyt_log_write_str(const char *s)
+{
+	int ret;
+
+	do
+	{
+		ret = putchar(*s);
+	} while (ret != EOF && *++s);
+
+	return ret;
+}
+
+/*
+ * log printf
+ */
+uint8_t cyt_log_write(cyt_log_level_t level, const char *tag, const char *fmt,
+		...)
+{
+
+	cyt_tag_level_t *info_tag = NULL;
+
+	int ret;
+	va_list va;
+	char *pbuf;
+
+	info_tag = cyt_log_find_tag(tag);
+	if ((info_tag == NULL) || (info_tag->level <= level))
+	{
+		return false;
+	}
+
+	va_start(va, fmt);
+	ret = vasprintf(&pbuf, fmt, va);
+	va_end(va);
+	if (ret < 0)
+		goto out;
+	ret = esp_log_write_str(pbuf);
+	free(pbuf);
+
+	return true;
+}
+
+void apt(void)
+{
+	printf("1");
+}

@@ -1,0 +1,39 @@
+#ifndef __LOG_H__
+#define __LOG_H__
+
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stddef.h>
+
+typedef enum
+{
+	CYT_LOG_NONE = 0, /*!< No log output */
+	CYT_LOG_ERROR, /*!< Critical errors, software module can not recover on its own */
+	CYT_LOG_WARN, /*!< Error conditions from which recovery measures have been taken */
+	CYT_LOG_INFO, /*!< Information messages which describe normal flow of events */
+	CYT_LOG_DEBUG, /*!< Extra information which is not necessary for normal use (values, pointers, sizes, etc). */
+
+	CYT_LOG_MAX
+} cyt_log_level_t;
+
+typedef struct
+{
+	char *tag;
+	uint8_t level;
+	void *next;
+} cyt_tag_level_t;
+
+#define LOG_COLOR_HEAD	"\033[0;%dm"
+#define	LOG_COLOR_E		"\033[0;31m"
+#define	LOG_COLOR_W		"\033[0;32m"
+#define	LOG_COLOR_I		"\033[0;33m"
+#define	LOG_COLOR_D		"\033[0;37m"
+#define	LOG_COLOR_END	"\033[0;39m"
+
+extern uint8_t cyt_log_write(cyt_log_level_t level, const char *tag,
+		const char *fmt, ...);
+
+#endif
