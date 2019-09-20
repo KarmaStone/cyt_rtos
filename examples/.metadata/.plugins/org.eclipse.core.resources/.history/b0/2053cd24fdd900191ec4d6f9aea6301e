@@ -1,0 +1,91 @@
+#ifndef __MISCDEVICE_H
+#define __MISCDEVICE_H
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+#include <stdbool.h>
+#include "stm32l4xx_hal.h"
+#include "major.h"
+#include "unit.h"
+#include "priv_list.h"
+#include "priv_os.h"
+#include "init_d.h"
+
+/**
+* @}
+*/
+typedef void *FIL_HAND;
+/**
+* @}
+*/
+
+#define MISC_DYNAMIC_MINOR 255
+#define DYNAMIC_MINORS_MAX 0
+
+  
+#define IOCTL_FLAG_RESUME   0x00000001
+#define IOCTL_FLAG_SUSPEND   0x00000002
+
+#define IOCTL_FLAG_SET_STOP 0x01000000
+
+
+#define IOCTL_FLAG_USER_FLAG1 0x02000000
+#define IOCTL_FLAG_USER_FLAG2 0x04000000
+/**
+* @}
+*/
+struct file_operations
+{
+    uint32_t onwer;
+    int (*open)(FIL_HAND *fd);
+    int (*write)(FIL_HAND *fd, const void *buf, uint32_t count);
+    int (*read)(FIL_HAND *fd, void *buf, uint32_t count);
+    int (*ioctl)(FIL_HAND *fd, void *buf, uint32_t count, uint32_t flag);
+    int (*resume)(FIL_HAND *fd);
+	int (*suspend)(FIL_HAND *fd);
+};
+
+struct miscdevice
+{
+    uint8_t major;
+    uint8_t minor;
+    uint8_t used;
+    const int8_t *name;
+    const struct file_operations *fops;
+    const int8_t *nodename;
+    //mode_t mode;
+};
+
+typedef struct miscdevice DEVICE_OPS;
+
+
+/**
+* @}
+*/
+extern int misc_init(void);
+extern int misc_register(struct miscdevice *misc);
+extern int misc_deregister(struct miscdevice *misc);
+
+extern list *misc_get_list(void);
+
+/**
+* @}
+*/
+typedef void *DEV_HAND;
+
+/**
+* @}
+*/
+extern DEV_HAND dev_open(char *name, int32_t flag);
+extern int dev_read(DEV_HAND fd, uint8_t *data, uint32_t count);
+extern int dev_write(DEV_HAND fd, uint8_t *data, uint32_t count);
+extern int dev_ioctl(FIL_HAND *fd, void *buf, uint32_t count, uint32_t flag);
+extern int c_resume(FIL_HAND *fd);
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __DRIVER_REGISTER_H */

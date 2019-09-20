@@ -1,0 +1,131 @@
+#include "init_d.h"
+#include "stm32l4xx_hal.h"
+#include "log.h"
+
+static initcall_t *fn1_start = __section_begin("fn1");
+static initcall_t *fn1_end = __section_end("fn1");
+
+static initcall_t *fn2_start = __section_begin("fn2");
+static initcall_t *fn2_end = __section_end("fn2");
+
+static initcall_t *fn3_start = __section_begin("fn3");
+static initcall_t *fn3_end = __section_end("fn3");
+
+static initcall_t *fn4_start = __section_begin("fn4");
+static initcall_t *fn4_end = __section_end("fn4");
+
+static initcall_t *fn5_start = __section_begin("fn5");
+static initcall_t *fn5_end = __section_end("fn5");
+
+static initcall_t *fn6_start = __section_begin("fn6");
+static initcall_t *fn6_end = __section_end("fn6");
+
+static initcall_t *fn7_start = __section_begin("fn7");
+static initcall_t *fn7_end = __section_end("fn7");
+
+void driver_init(void)
+{
+    initcall_t *tp;
+
+    for (tp = fn1_start; tp < fn1_end; tp++)
+    {
+        if (tp != NULL)
+        {
+            tp->fun();
+        }
+        else
+        {
+            log(ERR, "fn init is error , start=%x , end = %x\n", fn1_start, fn1_end);
+        }
+    }
+
+    for (tp = fn2_start; tp < fn2_end; tp++)
+    {
+        if (tp != NULL)
+        {
+            tp->fun();
+        }
+        else
+        {
+            log(ERR, "fn init is error , start=%x , end = %x\n", fn2_start, fn2_end);
+        }
+    }
+
+    for (tp = fn3_start; tp < fn3_end; tp++)
+    {
+        if (tp != NULL)
+        {
+            tp->fun();
+        }
+        else
+        {
+            log(ERR, "fn init is error , start=%x , end = %x\n", fn3_start, fn3_end);
+        }
+    }
+
+    for (tp = fn4_start; tp < fn4_end; tp++)
+    {
+        if (tp != NULL)
+        {
+            tp->fun();
+        }
+        else
+        {
+            log(ERR, "fn init is error , start=%x , end = %x\n", fn4_start, fn4_end);
+        }
+    }
+
+    
+}
+
+
+void task_start( void )
+{
+    initcall_t *tp;
+
+    for (tp = fn5_start; tp < fn5_end; tp++)
+    {
+        if (tp != NULL)
+        {
+            tp->fun();
+        }
+        else
+        {
+            log(ERR, "fn init is error , start=%x , end = %x\n", fn5_start, fn5_end);
+        }
+    }
+}
+
+void task_resume( void )
+{
+initcall_t *tp;
+
+    for (tp = fn6_start; tp < fn6_end; tp++)
+    {
+        if (tp != NULL)
+        {
+            tp->fun();
+        }
+        else
+        {
+            log(ERR, "fn init is error , start=%x , end = %x\n", fn6_start, fn6_end);
+        }
+    }    
+}
+
+void task_suspend( void )
+{
+    initcall_t *tp;
+
+    for (tp = fn7_start; tp < fn7_end; tp++)
+    {
+        if (tp != NULL)
+        {
+            tp->fun();
+        }
+        else
+        {
+            log(ERR, "fn init is error , start=%x , end = %x\n", fn7_start, fn7_end);
+        }
+    }    
+}

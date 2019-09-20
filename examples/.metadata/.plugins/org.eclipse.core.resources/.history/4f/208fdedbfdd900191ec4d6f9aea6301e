@@ -1,0 +1,152 @@
+#include "priv_os.h"
+
+/* Determine whether we are in thread mode or handler mode. */
+static int in_isr_mode(void)
+{
+    return __get_IPSR() != 0;
+}
+
+sc_queue_t creat_queue(uint32_t queue_deep , uint32_t queue_size )
+{
+    sc_queue_t *q_tmp;
+
+    q_tmp = xQueueCreate(queue_deep , queue_size );
+    configASSERT(q_tmp);
+
+    return q_tmp;
+}  
+
+int send_queue(sc_queue_t id, void *data, uint32_t millisec)
+{
+    portBASE_TYPE taskWoken = pdFALSE;
+    TickType_t ticks;
+
+    ticks = millisec / portTICK_PERIOD_MS;
+    if (ticks == 0)
+    {
+        ticks = 1;
+    }
+
+    if (in_isr_mode())
+    {
+        if (xQueueSendFromISR(id, data, &taskWoken) != pdTRUE)
+        {
+            return -1;
+        }
+        portEND_SWITCHING_ISR(taskWoken);
+    }
+    else
+    {
+        if (xQueueSend(id, data, ticks) != pdTRUE)
+        {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int read_queue(sc_queue_t id, void *data ,uint32_t millisec)
+{
+    portBASE_TYPE taskWoken = pdFALSE;
+    TickType_t ticks = 0;
+ 
+    if (millisec == WAIT_FOR_EVER)
+    {
+        ticks = portMAX_DELAY;
+    }
+    else if (millisec != 0)
+    {
+        ticks = millisec / portTICK_PERIOD_MS;
+        if (ticks == 0)
+        {
+            ticks = 1;
+        }
+    }
+
+    if (in_isr_mode())
+    {
+        if (xQueueReceiveFromISR(id, data , &taskWoken) != pdTRUE)
+        {
+            return -1;
+        }
+        portEND_SWITCHING_ISR(taskWoken);
+    }
+    else
+    {
+        if (xQueueReceive(id, data , ticks) != pdTRUE)
+        {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+
+
+sc_semaphore_t creat_semqphore( void )
+{
+    sc_semaphore_t seamp;
+
+    configASSERT((seamp = xSemaphoreCreateBinary()));
+
+    return seamp;
+}
+
+int read_semaphore(sc_semaphore_t id, uint32_t millisec)
+{
+    portBASE_TYPE taskWoken = pdFALSE;
+    TickType_t ticks = 0;
+ 
+    if (millisec == WAIT_FOR_EVER)
+    {
+        ticks = portMAX_DELAY;
+    }
+    else if (millisec != 0)
+    {
+        ticks = millisec / portTICK_PERIOD_MS;
+        if (ticks == 0)
+        {
+            ticks = 1;
+        }
+    }
+
+    if (in_isr_mode())
+    {
+        if (xSemaphoreTakeFromISR(id, &taskWoken) != pdTRUE)
+        {
+            return -1;
+        }
+        portEND_SWITCHING_ISR(taskWoken);
+    }
+    else if (xSemaphoreTake(id, ticks) != pdTRUE)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
+int send_semaphore(sc_semaphore_t id)
+{
+    portBASE_TYPE taskWoken = pdFALSE;
+
+    if (in_isr_mode())
+    {
+        if (xSemaphoreGiveFromISR(id, &taskWoken) != pdTRUE)
+        {
+            return -1;
+        }
+        portEND_SWITCHING_ISR(taskWoken);
+    }
+    else
+    {
+        if (xSemaphoreGive(id) != pdTRUE)
+        {
+            return  -1;
+        }
+    }
+
+    return 0;
+}

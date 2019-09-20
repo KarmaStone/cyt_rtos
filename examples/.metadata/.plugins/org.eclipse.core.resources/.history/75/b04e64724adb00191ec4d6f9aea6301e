@@ -1,0 +1,216 @@
+#include "miscdevice.h"
+
+static list *msicdev_list;
+static list_iter *msicdev_list_iter;
+static uint8_t DYNAMIC_MINORS = DYNAMIC_MINORS_MAX + 1;
+sc_mutex_t misc_mtx;
+
+int misc_init(void)
+{
+	msicdev_list = list_create();
+	msicdev_list_iter = list_get_iterator(msicdev_list, START_FROM_HEAD);
+
+	if ((msicdev_list == NULL) || (msicdev_list_iter == NULL))
+	{
+		/*msicdev列表初始化失败,系统重启*/
+		//soft_system_resert(__func__);
+	}
+    
+    misc_mtx = creat_mutex();
+    
+    return 0;
+}
+
+arch_init(misc_init);
+
+list *misc_get_list( void )
+{
+	return msicdev_list;
+}
+
+static list_node *misc_list_empty(struct miscdevice *misc)
+{
+	list_iter *iter;
+	list_node *node;
+
+	iter = list_get_iterator(msicdev_list, START_FROM_HEAD);
+	while ((node = list_next(iter)) != NULL)
+	{
+		if (misc == node->value)
+		{
+			list_release_iterator(iter);
+			return node;
+		}
+	}
+	list_release_iterator(iter);
+	return NULL;
+}
+
+static bool misc_search_enter(uint8_t minor)
+{
+	list_iter *iter;
+	list_node *node;
+	struct miscdevice *misc;
+
+	iter = list_get_iterator(msicdev_list, START_FROM_HEAD);
+	while ((node = list_next(iter)) != NULL)
+	{
+		misc = (struct miscdevice *)(node->value);
+		if (misc->minor == minor)
+		{
+			list_release_iterator(iter);
+			return true;
+		}
+	}
+	list_release_iterator(iter);
+	return false;
+}
+
+int misc_register(struct miscdevice *misc)
+{
+	int err = 0;
+    
+    if ( misc_list_empty(misc) != NULL )
+    {
+        INIT_PRINT(INIT_FAIL,"%s hasbeen register" , misc->name);
+		return -EINVAL;
+    }
+	if (misc->minor != MISC_DYNAMIC_MINOR)
+	{
+		if (misc_search_enter(misc->minor) == true)
+		{
+            INIT_PRINT(INIT_FAIL,"%s have the same minor=%d" , misc->name ,misc->minor);
+			return -EBUSY;
+		}
+	}
+	else
+	{
+		misc->minor = DYNAMIC_MINORS++;
+	}
+
+	misc->major = MISC_MAJOR;
+	if (list_add_node_tail(msicdev_list, misc) == NULL)
+	{
+        INIT_PRINT(INIT_FAIL,"%s register" , misc->name);
+		return -ENOMEM;
+	}
+    
+    INIT_PRINT(INIT_OK,"%s register" , misc->name);
+
+	return err;
+}
+
+int misc_deregister(struct miscdevice *misc)
+{
+    list_node *node; 
+    
+    if( list_length(msicdev_list) == 0)
+        return -EINVAL;
+    
+	if ( ( node = misc_list_empty(misc)) == NULL )
+		return -EINVAL;
+	
+	
+	list_del_node(msicdev_list , node);
+	
+	return 0;
+}
+
+DEV_HAND dev_open( char *name , int32_t flag)
+{
+	list_iter *iter;
+	list_node *node;
+	struct miscdevice *misc;
+
+    //mutex_lock(misc_mtx);
+	iter = list_get_iterator(msicdev_list, START_FROM_HEAD);
+	while ((node = list_next(iter)) != NULL)
+	{
+		misc = (struct miscdevice *)(node->value);
+		if ( strncmp((char *)misc->name , name , strlen(name)) ==0 )
+		{
+			list_release_iterator(iter);
+			misc->used = 1;
+            if( misc->fops->open)
+            {
+                misc->fops->open((void *)misc);
+            }
+            //mutex_unlock(misc_mtx);
+			return misc;
+		}
+	}
+	list_release_iterator(iter);
+    //mutex_unlock(misc_mtx);
+    return NULL;
+}
+
+
+int dev_read( DEV_HAND fd , uint8_t *data , uint32_t count)
+{
+    DEVICE_OPS *device = (struct miscdevice *)fd;
+    
+    if(device == NULL)
+    {
+        return -ENOENT;
+    }
+    
+    if( device->fops->read != NULL)
+    {
+        return (device->fops->read(fd , (void *)data , count));
+    }
+    
+    return -ENOENT;
+}
+
+int dev_write( DEV_HAND fd , uint8_t *data , uint32_t count)
+{
+    DEVICE_OPS *device = (struct miscdevice *)fd;
+    
+    if(device == NULL)
+    {
+        return -ENOENT;
+    }
+    
+    if( device->fops->write != NULL)
+    {
+        return (device->fops->write(fd , (void *)data , count));
+    }
+    
+    return -ENOENT;
+}
+
+
+int dev_ioctl(FIL_HAND *fd, void *buf, uint32_t count, uint32_t flag)
+{
+    DEVICE_OPS *device = (struct miscdevice *)fd;
+    
+    if(device == NULL)
+    {
+        return -ENOENT;
+    }
+    
+    if( device->fops->ioctl != NULL)
+    {
+        return (device->fops->ioctl(fd , buf , count , flag));
+    }
+    
+    return -ENOENT;    
+}
+
+
+int c_resume(FIL_HAND *fd)
+{
+    DEVICE_OPS *device = (struct miscdevice *)fd;
+    
+    if(device == NULL)
+    {
+        return -ENOENT;
+    }
+    
+    if( device->fops->resume != NULL)
+    {
+        return (device->fops->resume(fd));
+    }
+    
+    return -ENOENT;    
+}

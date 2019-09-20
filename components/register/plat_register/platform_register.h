@@ -1,0 +1,32 @@
+#ifndef __PLATFORM_REGISTER_H
+#define __PLATFORM_REGISTER_H
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+#include <stdbool.h>
+#include "log.h"
+#include "cyt_list.h"
+#include "priv_os.h"
+#include "init_d.h"
+
+struct platformdevice
+{
+    char *name;
+    int (*probe)   (struct platformdevice *dev);
+    int (*remove)  (struct platformdevice *dev);
+    int (*suspend) (struct platformdevice *dev);
+    int (*resume)  (struct platformdevice *dev);
+};
+
+
+extern int platform_register(struct platformdevice *platform);
+extern int platform_deregister(struct platformdevice *platform);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __DRIVER_REGISTER_H */
